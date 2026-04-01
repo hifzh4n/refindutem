@@ -82,6 +82,7 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: fullName,
+            matric_number: userId.trim().toUpperCase(),
             user_role: role,
           }
         }

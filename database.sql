@@ -50,6 +50,67 @@ CREATE TABLE IF NOT EXISTS profiles (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create chat_messages table for realtime chat conversations
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id TEXT NOT NULL,
+  sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  receiver_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Backfill profiles for existing auth users and keep them synced.
+INSERT INTO profiles (id, full_name, matric_number, avatar_url, created_at, updated_at)
+SELECT
+  u.id,
+  COALESCE(NULLIF(u.raw_user_meta_data->>'full_name', ''), UPPER(SPLIT_PART(u.email, '@', 1))),
+  COALESCE(NULLIF(u.raw_user_meta_data->>'matric_number', ''), UPPER(SPLIT_PART(u.email, '@', 1))),
+  NULLIF(u.raw_user_meta_data->>'avatar_url', ''),
+  COALESCE(u.created_at, NOW()),
+  NOW()
+FROM auth.users u
+ON CONFLICT (id) DO UPDATE
+SET
+  full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+  matric_number = COALESCE(EXCLUDED.matric_number, profiles.matric_number),
+  avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url),
+  updated_at = NOW();
+
+CREATE OR REPLACE FUNCTION public.sync_profile_from_auth_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, matric_number, avatar_url, created_at, updated_at)
+  VALUES (
+    NEW.id,
+    COALESCE(NULLIF(NEW.raw_user_meta_data->>'full_name', ''), UPPER(SPLIT_PART(NEW.email, '@', 1))),
+    COALESCE(NULLIF(NEW.raw_user_meta_data->>'matric_number', ''), UPPER(SPLIT_PART(NEW.email, '@', 1))),
+    NULLIF(NEW.raw_user_meta_data->>'avatar_url', ''),
+    COALESCE(NEW.created_at, NOW()),
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET
+    full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
+    matric_number = COALESCE(EXCLUDED.matric_number, public.profiles.matric_number),
+    avatar_url = COALESCE(EXCLUDED.avatar_url, public.profiles.avatar_url),
+    updated_at = NOW();
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_profile_sync ON auth.users;
+CREATE TRIGGER on_auth_user_profile_sync
+AFTER INSERT OR UPDATE OF email, raw_user_meta_data
+ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_profile_from_auth_user();
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_lost_items_user_id ON lost_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_lost_items_created_at ON lost_items(created_at DESC);
@@ -58,6 +119,19 @@ CREATE INDEX IF NOT EXISTS idx_found_items_created_at ON found_items(created_at 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_profiles_matric_number ON profiles(matric_number);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_created ON chat_messages(conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_sender_id ON chat_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_receiver_id ON chat_messages(receiver_id);
+
+DO $$
+BEGIN
+  BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+  EXCEPTION
+    WHEN duplicate_object THEN
+      NULL;
+  END;
+END $$;
 
 -- Enable RLS (Row Level Security) on lost_items
 ALTER TABLE IF EXISTS lost_items ENABLE ROW LEVEL SECURITY;
@@ -113,6 +187,21 @@ CREATE POLICY "Users can insert their own notifications" ON notifications
 DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 CREATE POLICY "Users can update their own notifications" ON notifications
   FOR UPDATE USING (auth.uid() = user_id);
+
+-- Enable RLS on chat_messages
+ALTER TABLE IF EXISTS chat_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own chat messages" ON chat_messages;
+CREATE POLICY "Users can view their own chat messages" ON chat_messages
+  FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+
+DROP POLICY IF EXISTS "Users can insert chat messages as sender" ON chat_messages;
+CREATE POLICY "Users can insert chat messages as sender" ON chat_messages
+  FOR INSERT WITH CHECK (auth.uid() = sender_id);
+
+DROP POLICY IF EXISTS "Users can delete their own sent chat messages" ON chat_messages;
+CREATE POLICY "Users can delete their own sent chat messages" ON chat_messages
+  FOR DELETE USING (auth.uid() = sender_id);
 
 -- Enable RLS on profiles
 ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;

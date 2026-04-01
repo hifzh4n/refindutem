@@ -69,7 +69,11 @@ export default function LoginPage() {
       } else {
         const authUser = data.user;
         if (authUser) {
-          const matricNumber = authUser.email?.split("@")[0]?.toUpperCase() || userId.trim().toUpperCase();
+          const matricNumber =
+            (typeof authUser.user_metadata?.matric_number === "string" &&
+              authUser.user_metadata.matric_number.trim().toUpperCase()) ||
+            authUser.email?.split("@")[0]?.toUpperCase() ||
+            userId.trim().toUpperCase();
           const fullName =
             (typeof authUser.user_metadata?.full_name === "string" && authUser.user_metadata.full_name.trim()) ||
             userId.trim().toUpperCase();

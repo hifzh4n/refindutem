@@ -24,6 +24,7 @@ export const CONFIG = {
     DASHBOARD: "/dashboard",
     REGISTER: "/register",
     PROFILE: "/profile",
+    CHAT: "/chat",
     REPORTED_ITEMS: "/reported-items",
     NOTIFICATIONS: "/notifications",
     REPORT: "/report",

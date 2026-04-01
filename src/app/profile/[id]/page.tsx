@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Loader2, MapPin, Package, Shield } from "lucide-react";
+import { ChevronLeft, Loader2, MessageCircle, Shield } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/app-header";
@@ -104,6 +104,14 @@ export default function PublicProfilePage() {
     }
   };
 
+  const handleMessage = () => {
+    if (!profile || !currentUserId || currentUserId === profile.id) {
+      return;
+    }
+
+    router.push(`${CONFIG.ROUTES.CHAT}/${profile.id}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -178,7 +186,16 @@ export default function PublicProfilePage() {
           >
             Go to My Profile
           </button>
-        ) : null}
+        ) : (
+          <button
+            type="button"
+            onClick={handleMessage}
+            className="w-full h-11 rounded-lg bg-[#203e7e] text-white text-sm font-semibold transition hover:bg-[#1a3468] inline-flex items-center justify-center gap-2"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Message
+          </button>
+        )}
       </main>
     </div>
   );
