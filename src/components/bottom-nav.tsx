@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, ClipboardList, Home, Plus, User } from "lucide-react";
+import { Bell, ClipboardList, Home, MessageCircle, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { CONFIG } from "@/lib/config";
 import { createClient } from "@/utils/supabase/client";
@@ -33,6 +33,7 @@ export function BottomNav() {
 
   const isHome = pathname.startsWith(CONFIG.ROUTES.DASHBOARD);
   const isReportedItems = pathname.startsWith(CONFIG.ROUTES.REPORTED_ITEMS);
+  const isChat = pathname.startsWith(CONFIG.ROUTES.CHAT);
   const isNotifications = pathname.startsWith(CONFIG.ROUTES.NOTIFICATIONS);
   const isProfile = pathname.startsWith(CONFIG.ROUTES.PROFILE);
 
@@ -200,11 +201,15 @@ export function BottomNav() {
 
         <div className="relative z-10 w-16 flex justify-center -mt-9">
           <button
-            onClick={() => router.push(CONFIG.ROUTES.REPORT)}
-            className="relative bg-gradient-to-tr from-[#203e7e] to-[#3972ff] text-white rounded-full p-3.5 shadow-[0_12px_26px_rgba(32,62,126,0.5)] active:scale-95 transition-transform flex items-center justify-center border-[5px] border-white/90 before:absolute before:inset-[-8px] before:rounded-full before:bg-blue-400/20 before:blur-md before:-z-10"
-            aria-label="Create report"
+            onClick={() => router.push(CONFIG.ROUTES.CHAT)}
+            className={`relative rounded-full p-3.5 shadow-[0_12px_26px_rgba(32,62,126,0.5)] active:scale-95 transition-transform flex items-center justify-center border-[5px] border-white/90 before:absolute before:inset-[-8px] before:rounded-full before:bg-blue-400/20 before:blur-md before:-z-10 ${
+              isChat
+                ? "bg-gradient-to-tr from-[#203e7e] to-[#3972ff] text-white"
+                : "bg-gradient-to-tr from-[#8ea4d8] to-[#6d8ddb] text-white"
+            }`}
+            aria-label="Messages"
           >
-            <Plus className="w-6 h-6" strokeWidth={3} />
+            <MessageCircle className="w-6 h-6" strokeWidth={2.5} />
           </button>
         </div>
 

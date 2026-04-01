@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, Loader2, Send, UserRound } from "lucide-react";
+import { Loader2, Send, UserRound } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/app-header";
@@ -223,17 +223,7 @@ export default function ChatPage() {
       <AppHeader onLogout={handleLogout} isSigningOut={isSigningOut} />
 
       <main className="w-full md:max-w-md lg:max-w-lg mx-auto px-4 pt-20 pb-28 flex flex-col gap-3 min-h-screen">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#203e7e]/20 bg-white text-[#203e7e] shadow-sm transition hover:bg-[#203e7e]/5"
-            aria-label="Back"
-          >
-            <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
-          </button>
-
-          <div className="flex-1 rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-sm flex items-center gap-3">
+        <div className="rounded-xl border border-gray-100 bg-white px-3 py-2 shadow-sm flex items-center gap-3">
             <div className="h-10 w-10 rounded-full overflow-hidden bg-blue-50 text-[#203e7e] border border-blue-100 flex items-center justify-center shrink-0">
               {contact?.avatarUrl ? (
                 <img src={contact.avatarUrl} alt={contact.name} className="h-full w-full object-cover" />
@@ -256,7 +246,6 @@ export default function ChatPage() {
               </button>
             ) : null}
           </div>
-        </div>
 
         <section className="rounded-2xl border border-gray-100 bg-white shadow-sm p-3 flex-1 min-h-[54vh] flex flex-col">
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
