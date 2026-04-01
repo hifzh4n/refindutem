@@ -53,7 +53,7 @@ export default function LoginPage() {
     try {
       const loginEmail = generateAuthEmail(userId.trim(), role);
       
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password,
       });
@@ -67,6 +67,30 @@ export default function LoginPage() {
           toast.error(error.message || "An error occurred during login.");
         }
       } else {
+        const authUser = data.user;
+        if (authUser) {
+          const matricNumber = authUser.email?.split("@")[0]?.toUpperCase() || userId.trim().toUpperCase();
+          const fullName =
+            (typeof authUser.user_metadata?.full_name === "string" && authUser.user_metadata.full_name.trim()) ||
+            userId.trim().toUpperCase();
+
+          const { error: profileSyncError } = await supabase.from("profiles").upsert(
+            {
+              id: authUser.id,
+              full_name: fullName,
+              matric_number: matricNumber,
+              avatar_url:
+                typeof authUser.user_metadata?.avatar_url === "string" ? authUser.user_metadata.avatar_url : null,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "id" }
+          );
+
+          if (profileSyncError) {
+            console.warn("Unable to sync profile details:", profileSyncError);
+          }
+        }
+
         toast.success("Successfully logged in!");
         router.push(CONFIG.ROUTES.DASHBOARD);
       }

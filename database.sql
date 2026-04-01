@@ -40,6 +40,16 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create profiles table for public contact information
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name VARCHAR(255),
+  matric_number VARCHAR(100),
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_lost_items_user_id ON lost_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_lost_items_created_at ON lost_items(created_at DESC);
@@ -47,6 +57,7 @@ CREATE INDEX IF NOT EXISTS idx_found_items_user_id ON found_items(user_id);
 CREATE INDEX IF NOT EXISTS idx_found_items_created_at ON found_items(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profiles_matric_number ON profiles(matric_number);
 
 -- Enable RLS (Row Level Security) on lost_items
 ALTER TABLE IF EXISTS lost_items ENABLE ROW LEVEL SECURITY;
@@ -102,6 +113,22 @@ CREATE POLICY "Users can insert their own notifications" ON notifications
 DROP POLICY IF EXISTS "Users can update their own notifications" ON notifications;
 CREATE POLICY "Users can update their own notifications" ON notifications
   FOR UPDATE USING (auth.uid() = user_id);
+
+-- Enable RLS on profiles
+ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated users can view all profiles" ON profiles;
+CREATE POLICY "Authenticated users can view all profiles" ON profiles
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+CREATE POLICY "Users can insert their own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+CREATE POLICY "Users can update their own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
 -- Create storage bucket for report photos (run once)
 INSERT INTO storage.buckets (id, name, public)

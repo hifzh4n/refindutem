@@ -1,14 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, Loader2, MapPin, Package, Tag, Text, X } from "lucide-react";
+import { ArrowUpRight, CalendarDays, ChevronLeft, Loader2, MapPin, Package, Tag, Text, X } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AppHeader } from "@/components/app-header";
 import { CONFIG } from "@/lib/config";
+import type { AppUser } from "@/lib/types";
 import { createClient } from "@/utils/supabase/client";
 
 type ReportType = "lost" | "found";
+
+type ContactProfile = {
+  id: string;
+  fullName: string;
+  matricNumber: string;
+  avatarUrl: string | null;
+};
 
 type ReportDetail = {
   id: string;
@@ -50,6 +58,13 @@ type FoundRow = {
   image_urls: string[] | null;
 };
 
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  matric_number: string | null;
+  avatar_url: string | null;
+};
+
 const TYPE_BADGE: Record<ReportType, string> = {
   lost: "text-white bg-[#e31e24] border-transparent",
   found: "text-[#203e7e] bg-blue-50 border-blue-100",
@@ -60,6 +75,13 @@ function formatDate(value?: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "Not available";
   return parsed.toLocaleString();
+}
+
+function getInitials(value?: string): string {
+  const source = value?.trim() || "UTeM User";
+  const parts = source.split(" ").filter(Boolean).slice(0, 2);
+  const initials = parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
+  return initials || "U";
 }
 
 export default function ReportDetailsPage() {
@@ -73,6 +95,7 @@ export default function ReportDetailsPage() {
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [record, setRecord] = useState<ReportDetail | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<ContactProfile | null>(null);
 
   const reportType = params?.type === "lost" || params?.type === "found" ? params.type : null;
   const reportId = typeof params?.id === "string" ? params.id : null;
@@ -90,7 +113,41 @@ export default function ReportDetailsPage() {
           router.push(CONFIG.ROUTES.LOGIN);
           return;
         }
-        setCurrentUserId(authData.user.id);
+        const authUser = authData.user as AppUser;
+        setCurrentUserId(authUser.id);
+
+        const loadContactProfile = async (ownerId: string) => {
+          const fallback: ContactProfile = {
+            id: ownerId,
+            fullName: ownerId === authUser.id ? authUser.user_metadata?.full_name || "UTeM User" : "UTeM User",
+            matricNumber:
+              ownerId === authUser.id ? authUser.email?.split("@")[0]?.toUpperCase() || "-" : "-",
+            avatarUrl: ownerId === authUser.id ? authUser.user_metadata?.avatar_url || null : null,
+          };
+
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from("profiles")
+              .select("id,full_name,matric_number,avatar_url")
+              .eq("id", ownerId)
+              .maybeSingle();
+
+            if (profileError || !profileData) {
+              setOwnerProfile(fallback);
+              return;
+            }
+
+            const profile = profileData as ProfileRow;
+            setOwnerProfile({
+              id: profile.id,
+              fullName: profile.full_name || fallback.fullName,
+              matricNumber: profile.matric_number || fallback.matricNumber,
+              avatarUrl: profile.avatar_url || fallback.avatarUrl,
+            });
+          } catch {
+            setOwnerProfile(fallback);
+          }
+        };
 
         if (reportType === "lost") {
           const { data, error } = await supabase
@@ -119,6 +176,7 @@ export default function ReportDetailsPage() {
             dateEvent: item.date_lost || "",
             imageUrls: item.image_urls || [],
           });
+          await loadContactProfile(item.user_id);
           return;
         }
 
@@ -148,6 +206,7 @@ export default function ReportDetailsPage() {
           dateEvent: item.date_found || "",
           imageUrls: item.image_urls || [],
         });
+        await loadContactProfile(item.user_id);
       } catch {
         toast.error("Unable to load report details.");
         router.push(CONFIG.ROUTES.REPORTED_ITEMS);
@@ -307,6 +366,33 @@ export default function ReportDetailsPage() {
                   <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Description</p>
                   <p className="font-medium text-gray-800 whitespace-pre-wrap">{record.description}</p>
                 </div>
+              </div>
+
+              <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-11 w-11 rounded-full border border-gray-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+                    {ownerProfile?.avatarUrl ? (
+                      <img src={ownerProfile.avatarUrl} alt={ownerProfile.fullName} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-sm font-bold text-[#203e7e]">{getInitials(ownerProfile?.fullName)}</span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Contact information</p>
+                    <p className="font-semibold text-gray-900 truncate">{ownerProfile?.fullName || "UTeM User"}</p>
+                    <p className="text-xs text-gray-500 truncate">Matric No: {ownerProfile?.matricNumber || "-"}</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => router.push(`/profile/${record.ownerId}`)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#203e7e]/20 bg-white text-[#203e7e] shadow-sm transition hover:bg-[#203e7e]/5 shrink-0"
+                  aria-label="View profile"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
