@@ -52,8 +52,9 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created
 ALTER TABLE IF EXISTS lost_items ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view their own lost items" ON lost_items;
-CREATE POLICY "Users can view their own lost items" ON lost_items
-  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Authenticated users can view all lost items" ON lost_items;
+CREATE POLICY "Authenticated users can view all lost items" ON lost_items
+  FOR SELECT USING (auth.uid() IS NOT NULL);
 
 DROP POLICY IF EXISTS "Users can insert their own lost items" ON lost_items;
 CREATE POLICY "Users can insert their own lost items" ON lost_items
@@ -71,8 +72,9 @@ CREATE POLICY "Users can delete their own lost items" ON lost_items
 ALTER TABLE IF EXISTS found_items ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view their own found items" ON found_items;
-CREATE POLICY "Users can view their own found items" ON found_items
-  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Authenticated users can view all found items" ON found_items;
+CREATE POLICY "Authenticated users can view all found items" ON found_items
+  FOR SELECT USING (auth.uid() IS NOT NULL);
 
 DROP POLICY IF EXISTS "Users can insert their own found items" ON found_items;
 CREATE POLICY "Users can insert their own found items" ON found_items

@@ -59,12 +59,12 @@ export default function ReportedItemsPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
-  const loadRecords = useCallback(async (userId: string) => {
+  const loadRecords = useCallback(async () => {
     setRecordsLoading(true);
 
     const [lostRes, foundRes] = await Promise.all([
-      supabase.from("lost_items").select("id,title,status,location_lost,image_urls,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
-      supabase.from("found_items").select("id,title,status,location_found,image_urls,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
+      supabase.from("lost_items").select("id,title,status,location_lost,image_urls,created_at").order("created_at", { ascending: false }),
+      supabase.from("found_items").select("id,title,status,location_found,image_urls,created_at").order("created_at", { ascending: false }),
     ]);
 
     const merged: ReportRecord[] = [];
@@ -133,7 +133,7 @@ export default function ReportedItemsPage() {
 
         const authUser = data.user as AppUser;
         setUser(authUser);
-        await loadRecords(authUser.id);
+        await loadRecords();
       } finally {
         setLoading(false);
       }
