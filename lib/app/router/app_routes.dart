@@ -8,4 +8,5 @@ class AppRoutes {
   static const lost = '/lost';
   static const found = '/found';
   static const profile = '/profile';
+  static const admin = '/admin';
 }

@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/application/auth_state_controller.dart';
+import '../../features/admin/presentation/pages/admin_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/landing/presentation/pages/landing_page.dart';
@@ -15,6 +16,7 @@ final _protectedRoutes = {
   AppRoutes.lost,
   AppRoutes.found,
   AppRoutes.profile,
+  AppRoutes.admin,
 };
 
 GoRouter createAppRouter(AuthStateController authState) {
@@ -73,6 +75,11 @@ GoRouter createAppRouter(AuthStateController authState) {
         path: AppRoutes.profile,
         name: 'profile',
         builder: (context, state) => const ProfilePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.admin,
+        name: 'admin',
+        builder: (context, state) => const AdminPage(),
       ),
     ],
   );

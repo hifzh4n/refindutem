@@ -13,6 +13,7 @@ import '../../../../core/errors/app_error_mapper.dart';
 import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
+import '../../../../features/admin/data/services/supabase_admin_service.dart';
 import '../../../../features/auth/application/auth_validators.dart';
 import '../../../../shared/widgets/app_page_shell.dart';
 import '../../domain/entities/profile_details.dart';
@@ -30,6 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   final _profileFormKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
+  final _adminService = SupabaseAdminService();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _currentPasswordController = TextEditingController();
@@ -52,6 +54,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isPasswordSaving = false;
   bool _isAvatarPreparing = false;
   bool _isApplyingProfile = false;
+  bool _isAdmin = false;
   bool _hideCurrentPassword = true;
   bool _hideNewPassword = true;
   bool _hideConfirmPassword = true;
@@ -73,9 +76,11 @@ class _ProfilePageState extends State<ProfilePage> {
       _phoneController.text,
     );
 
+    final hasPhoneChanges = !_isAdmin && normalizedPhone != _savedPhone;
+
     return normalizedFirstName != _savedFirstName ||
         normalizedLastName != _savedLastName ||
-        normalizedPhone != _savedPhone ||
+        hasPhoneChanges ||
         _selectedAvatarBytes != null;
   }
 
@@ -117,6 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadProfile() async {
     final profile = await _profileRepository.getProfile();
+    final isAdmin = await _adminService.isAdmin();
 
     if (!mounted) {
       return;
@@ -125,6 +131,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _isApplyingProfile = true;
     setState(() {
       _email = profile.email;
+      _isAdmin = isAdmin;
       _emailController.text = _email ?? '';
       _firstNameController.text = profile.firstName;
       _lastNameController.text = profile.lastName;
@@ -490,17 +497,19 @@ class _ProfilePageState extends State<ProfilePage> {
                 prefixIcon: Icon(Icons.mail_outline_rounded),
               ),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone number',
-                prefixIcon: _PhonePrefix(),
-                hintText: '123456789',
+            if (!_isAdmin) ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone number',
+                  prefixIcon: _PhonePrefix(),
+                  hintText: '123456789',
+                ),
+                validator: AuthValidators.malaysiaPhone,
               ),
-              validator: AuthValidators.malaysiaPhone,
-            ),
+            ],
             if (_profileErrorMessage != null) ...[
               const SizedBox(height: 16),
               _InlineErrorMessage(message: _profileErrorMessage!),
