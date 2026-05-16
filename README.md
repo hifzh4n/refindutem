@@ -99,7 +99,7 @@ flutter build web --release --base-href /refindutem/ \
 
 ## Deploy To GitHub Pages
 
-The workflow in `.github/workflows/flutter_ci.yml` deploys `build/web` to GitHub Pages after every successful push to `main`.
+The workflow in `.github/workflows/flutter_ci.yml` can deploy `build/web` to GitHub Pages after every successful push to `main`.
 
 Required repository secrets:
 
@@ -111,3 +111,5 @@ In GitHub, set Pages source to **GitHub Actions**. The deployed app will be serv
 ```text
 https://hifzh4n.github.io/refindutem/
 ```
+
+If repository secrets are not configured yet, the workflow keeps CI green and skips the Actions deployment. The repository can also serve a manually built release from the `gh-pages` branch.
