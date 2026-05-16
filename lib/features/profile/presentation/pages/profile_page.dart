@@ -5,10 +5,12 @@ import 'package:crop_your_image/crop_your_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/app_dependencies.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/errors/app_error_mapper.dart';
+import '../../../../core/localization/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/responsive_breakpoints.dart';
 import '../../../../features/auth/application/auth_validators.dart';
@@ -327,6 +329,38 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _signOut() async {
+    final l10n = AppLocalizations.of(context);
+    final shouldSignOut = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.logoutQuestion),
+        content: Text(l10n.logoutConfirmation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.logout_rounded),
+            label: Text(l10n.logout),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSignOut != true || !mounted) {
+      return;
+    }
+
+    await AppDependencies.of(context).signOut();
+
+    if (mounted) {
+      context.go(AppRoutes.landing);
+    }
+  }
+
   String _contentTypeFor(String? extension) {
     return switch (extension?.toLowerCase()) {
       'png' => 'image/png',
@@ -377,6 +411,8 @@ class _ProfilePageState extends State<ProfilePage> {
               _profileCard(context),
               const SizedBox(height: 20),
               _passwordCard(context),
+              const SizedBox(height: 20),
+              _accountActionsCard(context),
             ],
           );
         },
@@ -556,6 +592,19 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _accountActionsCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return _ProfileSectionCard(
+      title: 'Account actions',
+      child: OutlinedButton.icon(
+        onPressed: _signOut,
+        icon: const Icon(Icons.logout_rounded),
+        label: Text(l10n.logout),
       ),
     );
   }

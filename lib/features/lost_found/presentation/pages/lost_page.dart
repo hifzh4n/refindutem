@@ -1017,15 +1017,9 @@ class _LostReportHistoryTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          Text(
-            report.description,
+          _HistoryDescription(
+            text: report.description,
             maxLines: compact ? 2 : 3,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.mutedInk,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-            ),
           ),
           if (onMarkSolved != null) ...[
             const SizedBox(height: 14),
@@ -1111,16 +1105,7 @@ class _LostCompactReportTile extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  report.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.mutedInk,
-                    height: 1.3,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                _HistoryDescription(text: report.description, maxLines: 2),
               ],
             ),
           ),
@@ -1227,6 +1212,39 @@ class _HistoryMeta extends StatelessWidget {
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: AppColors.mutedInk,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HistoryDescription extends StatelessWidget {
+  const _HistoryDescription({required this.text, required this.maxLines});
+
+  final String text;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Icon(Icons.notes_rounded, size: 16, color: AppColors.mutedInk),
+        ),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.mutedInk,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
